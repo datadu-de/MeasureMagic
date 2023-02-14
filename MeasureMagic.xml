@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+# MeasureMagic Templates
+
+These expression templates can be used to create Measures within your Model using TabularEditor and the MeasureCollection.cs script.
+
+Use
+<![CDATA[
+// DAX Expression
+// ...
+]]>
+to wrap your Expression, if < or > are used
+
+## Supported Attributes
+
+-  Enabled
+-  NameTemplate
+-  DisplayFolder
+-  Description
+-  IsHidden
+-  FormatString
+-  TranslatedName
+
+## Variables
+
+You can use the following placeholders/variables:
+
+### Within NameTemplate & Description context
+    {0} = Base Measure Name, e.g. "Base Measure"
+    {1} = Base Measure Table Name, e.g. "Fact Sales"
+    {2} = Table Name Timestamp or Table Name of Base Measure as fallback
+    {3} = Base Measure Translated Name
+
+### TranslatedName context
+    {0} = Base Measure Name, e.g. "Base Measure"
+    {1} = Base Measure Table Name, e.g. "Fact Sales"
+    {2} = Table Name Timestamp or Table Name of Base Measure as fallback
+    {3} = Base Measure Translated Name (or Base Measure Name if Translated Name is empty)
+
+### Within DisplayFolder context
+    {0} = Base Measure Name, e.g. "Base Measure"
+    {1} = Base Measure Display Folder, e.g. "Revenue\Time Intelligence"
+
+### Within Expression context
+    {0} = Base Measure Dax Expression, e.g. "[Base Measure]"
+    {1} = Base Measure Name, e.g. "Base Measure"
+    {2} = Value of the Description proRTty of the base measure
+    {3} = Table Name Timestamps or Table Name of Base Measure as fallback
+
+-->
+<MeasureTemplateGroups>
+    <MeasureTemplateGroup Enabled="false" Name="ProjectName_1">
+        <MeasureCollection Enabled="true">
+            <Measure Enabled="true" NameTemplate="{0} Description" DisplayFolder="{1}" Description="Description of {0}">
+                "tbd"
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} MTD" DisplayFolder="{1}\Time Intelligence" Description="Month To Date for {0}">
+                CALCULATE (
+                    {0},
+                    DATESMTD ( 'Date'[DateFull] )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} YTD" DisplayFolder="{1}\Time Intelligence" Description="Year To Date for {0}">
+                CALCULATE (
+                    {0},
+                    DATESYTD ( 'Date'[DateFull] )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} Since Go-Live" DisplayFolder="{1}\Time Intelligence" Description="{0} Since big bang">
+                <![CDATA[
+                VAR vMaxDateID = MAX ( 'Date'[DATDateID] )
+                RETURN
+                    CALCULATE (
+                        {0},
+                        ALL ( 'Date' ),
+                        'Date'[DATDateID] <= vMaxDateID
+                    )
+                    ]]>
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} PMTD" DisplayFolder="{1}\Time Intelligence" Description="Previous Month To Date for {0}">
+                CALCULATE (
+                    {0},
+                    DATEADD (
+                        DATESMTD ( 'Date'[DateFull] ),
+                        -1,
+                        MONTH
+                    )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} PYTD" DisplayFolder="{1}\Time Intelligence" Description="Previous Year To Date for {0}">
+                CALCULATE (
+                    {0},
+                    DATEADD (
+                        DATESYTD ( 'Date'[DateFull] ),
+                        -1,
+                        YEAR
+                    )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} Time Frame" DisplayFolder="{1}\Time Intelligence" Description="Switches {0} between time frames">
+                SWITCH (
+                    SELECTEDVALUE ( 'Time Frame'[ID] ),
+                    10, [{1} MTD],
+                    20, [{1} YTD],
+                    30, [{1} Since Go-Live],
+                    BLANK ()
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} Time Frame PP" DisplayFolder="{1}\Time Intelligence" Description="Switches {0} between time frames - previous RTiod">
+                SWITCH (
+                    SELECTEDVALUE ( 'Time Frame'[ID] ),
+                    10, [{1} PMTD],
+                    20, [{1} PYTD],
+                    BLANK ()
+                )
+            </Measure>
+        </MeasureCollection>
+    </MeasureTemplateGroup>
+    <MeasureTemplateGroup Enabled="false" Name="ProjectName_2">
+        <MeasureCollection Enabled="false">
+            <Measure Enabled="true" NameTemplate="Timestamp DateValue {2}" DisplayFolder="" Description="" IsHidden="true" FormatString="dd.MM.yyyy">
+                CALCULATE (
+                    VALUES ( '_Timestamps'[DateValue] ),
+                    '_Timestamps'[Source] = "{3}"
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} PY RT" DisplayFolder="{1}" Description="">
+                VAR vLastDate = [Timestamp DateValue {3}]
+                RETURN
+                    CALCULATE (
+                        {0},
+                        DATESYTD ( DATEADD (
+                            FILTER (
+                                ALL ( 'DimDate'[Date_FullDate] ),
+                                'DimDate'[Date_FullDate] = vLastDate
+                            )  ,-1,YEAR)
+                        )
+                    )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} PPY RT" DisplayFolder="{1}" Description="">
+                VAR vLastDate = [Timestamp DateValue {3}]
+                RETURN
+                    CALCULATE (
+                        {0},
+                        DATESYTD ( DATEADD (
+                            FILTER (
+                                ALL ( 'DimDate'[Date_FullDate] ),
+                                'DimDate'[Date_FullDate] = vLastDate
+                            )  ,-2,YEAR)
+                        )
+                    )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} ACT RT" DisplayFolder="{1}" Description="">
+                VAR vLastDate = [Timestamp DateValue {3}]
+                RETURN
+                    CALCULATE (
+                        {0},
+                        DATESYTD (
+                            FILTER (
+                                ALL ( 'DimDate'[Date_FullDate] ),
+                                'DimDate'[Date_FullDate] = vLastDate
+                            )
+                        )
+                    )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} PPY AT" DisplayFolder="{1}" Description="">
+                VAR vLastDate = [Timestamp DateValue {3}]
+                RETURN
+                    CALCULATE (
+                        {0},
+                    DATESMTD ( DATEADD (
+                        FILTER (
+                            ALL ( 'DimDate'[Date_FullDate] ),
+                            'DimDate'[Date_FullDate] = vLastDate
+                        )  ,-2,YEAR)
+                    )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} PY AT" DisplayFolder="{1}" Description="">
+                VAR vLastDate = [Timestamp DateValue {3}]
+                RETURN
+                    CALCULATE (
+                        {0},
+                    DATESMTD ( DATEADD (
+                        FILTER (
+                            ALL ( 'DimDate'[Date_FullDate] ),
+                            'DimDate'[Date_FullDate] = vLastDate
+                        )  ,-1,YEAR)
+                    )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} ACT AT" DisplayFolder="{1}" Description="">
+                VAR vLastDate = [Timestamp DateValue {3}]
+                RETURN
+                    CALCULATE (
+                        {0},
+                    DATESMTD (
+                        FILTER (
+                            ALL ( 'DimDate'[Date_FullDate] ),
+                            'DimDate'[Date_FullDate] = vLastDate
+                            )
+                    )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} PY" DisplayFolder="{1}" Description="">
+                CALCULATE ( {0},
+                    SAMEPERIODLASTYEAR ( 'DimDate'[Date_FullDate] )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} PY Total" DisplayFolder="{1}" Description="">
+                VAR vLastDate = YEAR( [Timestamp DateValue {3}] )
+                RETURN
+                    CALCULATE (
+                        {0},
+                        DATEADD (
+                            CALCULATETABLE (
+                                VALUES ( 'DimDate'[Date_FullDate] ),
+                                ALL ( 'DimDate' ),
+                                FILTER ( ALL ( 'DimDate' ), 'DimDate'[Date_CalendarYear] = vLastDate )
+                            ),
+                            -1,
+                            YEAR
+                        )
+                    )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} PPY Total" DisplayFolder="{1}" Description="">
+                VAR vLastDate = YEAR( [Timestamp DateValue {3}] )
+                RETURN
+                    CALCULATE (
+                        {0},
+                        DATEADD (
+                            CALCULATETABLE (
+                                VALUES ( 'DimDate'[Date_FullDate] ),
+                                ALL ( 'DimDate' ),
+                                FILTER ( ALL ( 'DimDate' ), 'DimDate'[Date_CalendarYear] = vLastDate )
+                            ),
+                            -2,
+                            YEAR
+                        )
+                    )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} PPPY Total" DisplayFolder="{1}" Description="" IsHidden="true">
+                VAR vLastDate = YEAR( [Timestamp DateValue {3}] )
+                RETURN
+                    CALCULATE (
+                        {0},
+                        DATEADD (
+                            CALCULATETABLE (
+                                VALUES ( 'DimDate'[Date_FullDate] ),
+                                ALL ( 'DimDate' ),
+                                FILTER ( ALL ( 'DimDate' ), 'DimDate'[Date_CalendarYear] = vLastDate )
+                            ),
+                            -3,
+                            YEAR
+                        )
+                    )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} HR" DisplayFolder="{1}" Description="">
+                <![CDATA[
+                VAR vTimestampDateValue = [Timestamp DateValue {3}]
+                VAR vWorkdaysTotalYear =
+                    CALCULATE (
+                        [AT New],
+                        ALL ( 'DimDate' ),
+                        'DimDate'[Date_CalendarYear] = YEAR ( vTimestampDateValue )
+                    )
+                VAR vWorkdaysActMonth =
+                    CALCULATE (
+                        [AT New],
+                        FILTER (
+                            ALL ( 'DimDate'[Date_FullDate] ),
+                            YEAR ( 'DimDate'[Date_FullDate] ) = YEAR ( vTimestampDateValue )
+                                && MONTH ( 'DimDate'[Date_FullDate] ) = MONTH ( vTimestampDateValue )
+                        )
+                    )
+                VAR vWorkdaysActMonthDiff =
+                    CALCULATE (
+                        COUNT ( 'DimDate'[Date_FullDate] ),
+                        FILTER (
+                            ALL ( 'DimDate' ),
+                            'DimDate'[Date_WeekdayWeekend] = "Weekday"
+                                && 'DimDate'[Date_FullDate] <= vTimestampDateValue
+                                && YEAR ( 'DimDate'[Date_FullDate] ) = YEAR ( vTimestampDateValue )
+                                && MONTH ( 'DimDate'[Date_FullDate] ) = MONTH ( vTimestampDateValue )
+                        )
+                    )
+                VAR vWorkdaysRT =
+                    CALCULATE (
+                        [AT New] - vWorkdaysActMonth + vWorkdaysActMonthDiff,
+                        DATESYTD (
+                            FILTER (
+                                ALL ( 'DimDate'[Date_FullDate] ),
+                                'DimDate'[Date_FullDate] <= vTimestampDateValue
+                            )
+                        )
+                    )
+                RETURN
+                    DIVIDE (
+                        [{1} ACT RT],
+                        vWorkdaysRT
+                    ) * vWorkdaysTotalYear
+                ]]>
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} Δ PY AT" DisplayFolder="{1}" Description="">
+                [{1} ACT AT] - [{1} PY AT]
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} Δ PY RT" DisplayFolder="{1}" Description="">
+                [{1} ACT RT] - [{1} PY RT]
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} Δ% PY AT" DisplayFolder="{1}" Description="" FormatString="#,##0.0 %">
+                IF (
+                    [{1} PY AT] = 0
+                        || ISBLANK ( [{1} ACT AT] )
+                        || ISBLANK ( [{1} PY AT] ),
+                    BLANK(),
+                    DIVIDE (
+                        ( [{1} ACT AT] - [{1} PY AT] ),
+                        ABS ( [{1} PY AT] )
+                    )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} Δ% PY RT" DisplayFolder="{1}" Description="" FormatString="#,##0.0 %">
+                IF (
+                    [{1} PY RT] = 0
+                        || ISBLANK ( [{1} ACT RT] )
+                        || ISBLANK ( [{1} PY RT] ),
+                    BLANK(),
+                    DIVIDE (
+                        ( [{1} ACT RT] - [{1} PY RT] ),
+                        ABS ( [{1} PY RT] )
+                    )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} ΔPY Total" DisplayFolder="{1}" TranslatedName="{3} ΔPY Total">
+                [{1} PY Total] - [{1} PPY Total]
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} ΔPY% Total" DisplayFolder="{1}" FormatString="#,##0.0 %" TranslatedName="{3} ΔPY% Total">
+                DIVIDE( [{1} PY Total] - [{1} PPY Total], [{1} PPY Total] )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} RT_AT" DisplayFolder="{1}" Description="">
+                IF (
+                    NOT ( HASONEVALUE ( _Metadata[RT_AT] ) ),
+                    "Please choose AT or RT under _Metadata",
+                    SWITCH(
+                        SELECTEDVALUE( _Metadata[RT_AT] ),
+                        "AT", [{1} ACT AT],
+                        "RT", [{1} ACT RT],
+                        "PY Total", [{1} PY Total]
+                    )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} RT_AT PY" DisplayFolder="{1}" Description="">
+                IF (
+                    NOT (
+                        HASONEVALUE ( _Metadata[RT_AT] )
+                    ),
+                    "Please choose AT or RT under _Metadata",
+                    SWITCH(
+                        SELECTEDVALUE( _Metadata[RT_AT] ),
+                        "AT", [{1} PY AT],
+                        "RT", [{1} PY RT],
+                        "PY Total", [{1} PPY Total]
+                    )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} RT_AT PPY" DisplayFolder="{1}" Description="">
+                IF (
+                    NOT (
+                        HASONEVALUE ( _Metadata[RT_AT] )
+                    ),
+                    "Please choose AT or RT under _Metadata",
+                    SWITCH(
+                        SELECTEDVALUE( _Metadata[RT_AT] ),
+                        "AT", [{1} PPY AT],
+                        "RT", [{1} PPY RT],
+                        "PY Total", [{1} PPPY Total]
+                    )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} RT_AT Δ PY" DisplayFolder="{1}" Description="">
+                IF (
+                    NOT ( HASONEVALUE ( _Metadata[RT_AT] ) ),
+                    "Please choose AT or RT under _Metadata",
+                    SWITCH(
+                        SELECTEDVALUE( _Metadata[RT_AT] ),
+                        "AT", [{1} Δ PY AT],
+                        "RT", [{1} Δ PY RT],
+                        "PY Total", [{1} ΔPY Total]
+                    )
+                )
+            </Measure>
+            <Measure Enabled="true" NameTemplate="{0} RT_AT Δ% PY" DisplayFolder="{1}" Description="" FormatString="#,##0.0 %">
+                IF (
+                    NOT ( HASONEVALUE ( _Metadata[RT_AT] ) ),
+                    "Please choose AT or RT under _Metadata",
+                    SWITCH(
+                        SELECTEDVALUE( _Metadata[RT_AT] ),
+                        "AT", [{1} Δ% PY AT],
+                        "RT", [{1} Δ% PY RT],
+                        "PY Total", [{1} ΔPY% Total]
+                    )
+                )
+            </Measure>
+        </MeasureCollection>
+    </MeasureTemplateGroup>
+</MeasureTemplateGroups>
